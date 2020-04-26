@@ -13,3 +13,4 @@ terraform plan -out m6.tfplan
 terraform apply "m6.tfplan"
 
 terraform destroy
+

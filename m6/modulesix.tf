@@ -1,56 +1,22 @@
-##################################################################################
-# VARIABLES
-##################################################################################
-
-variable "aws_access_key" {}
-variable "aws_secret_key" {}
-variable "private_key_path" {}
-variable "key_name" {}
-variable "region" {
-  default = "us-east-1"
-}
-
-variable "network_address_space" {
-  default = "10.1.0.0/16"
-}
-
-variable "billing_code_tag" {}
-variable "environment_tag" {}
-variable "bucket_name_prefix" {}
-
-variable "arm_subscription_id" {}
-variable "arm_principal" {}
-variable "arm_password" {}
-variable "tenant_id" {}
-variable "dns_zone_name" {}
-variable "dns_resource_group" {}
-
-variable "instance_count" {
-  default = 2
-}
-
-variable "subnet_count" {
-  default = 2
-}
 
 ##################################################################################
 # PROVIDERS
 ##################################################################################
 
 provider "aws" {
-  access_key = var.aws_access_key
-  secret_key = var.aws_secret_key
+  #access_key = var.aws_access_key
+  #secret_key = var.aws_secret_key
   region     = var.region
 }
 
-provider "azurerm" {
-  version = "~> 1.0"
+/* provider "azurerm" {
+  version         = "~> 1.0"
   subscription_id = var.arm_subscription_id
   client_id       = var.arm_principal
   client_secret   = var.arm_password
   tenant_id       = var.tenant_id
   alias           = "arm-1"
-}
+} */
 
 ##################################################################################
 # LOCALS
@@ -239,7 +205,7 @@ resource "aws_instance" "nginx" {
   }
 
   provisioner "file" {
-    content = <<EOF
+    content     = <<EOF
 access_key =
 secret_key =
 security_token =
@@ -280,10 +246,10 @@ EOF
       "sudo pip install s3cmd",
       "s3cmd get s3://${aws_s3_bucket.web_bucket.id}/website/index.html .",
       "s3cmd get s3://${aws_s3_bucket.web_bucket.id}/website/Globo_logo_Vert.png .",
-      "sudo cp /home/ec2-user/index.html /usr/share/nginx/html/index.html",
-      "sudo cp /home/ec2-user/Globo_logo_Vert.png /usr/share/nginx/html/Globo_logo_Vert.png",
+      "sudo cp /home/ec2-user/index.html /usr/share/nginx/html/index.html .",
+      "sudo cp /home/ec2-user/Globo_logo_Vert.png /usr/share/nginx/html/Globo_logo_Vert.png .",
       "sudo logrotate -f /etc/logrotate.conf"
-      
+
     ]
   }
 
@@ -338,51 +304,43 @@ resource "aws_iam_role_policy" "allow_s3_all" {
 }
 EOF
 
-  }
+}
 
-  resource "aws_s3_bucket" "web_bucket" {
-    bucket        = local.s3_bucket_name
-    acl           = "private"
-    force_destroy = true
+resource "aws_s3_bucket" "web_bucket" {
+  bucket        = local.s3_bucket_name
+  acl           = "private"
+  force_destroy = true
 
-    tags = merge(local.common_tags, { Name = "${var.environment_tag}-web-bucket" })
+  tags = merge(local.common_tags, { Name = "${var.environment_tag}-web-bucket" })
 
-  }
+}
 
-  resource "aws_s3_bucket_object" "website" {
-    bucket = aws_s3_bucket.web_bucket.bucket
-    key    = "/website/index.html"
-    source = "./index.html"
+resource "aws_s3_bucket_object" "website" {
+  bucket = aws_s3_bucket.web_bucket.bucket
+  key    = "/website/index.html"
+  source = "./index.html"
 
-  }
+}
 
-  resource "aws_s3_bucket_object" "graphic" {
-    bucket = aws_s3_bucket.web_bucket.bucket
-    key    = "/website/Globo_logo_Vert.png"
-    source = "./Globo_logo_Vert.png"
+resource "aws_s3_bucket_object" "graphic" {
+  bucket = aws_s3_bucket.web_bucket.bucket
+  key    = "/website/Globo_logo_Vert.png"
+  source = "./Globo_logo_Vert.png"
 
-  }
+}
 
-  # Azure RM DNS #
-  resource "azurerm_dns_cname_record" "elb" {
-    name                = "${var.environment_tag}-website"
-    zone_name           = var.dns_zone_name
-    resource_group_name = var.dns_resource_group
-    ttl                 = "30"
-    record              = aws_elb.web.dns_name
-    provider            = azurerm.arm-1
+/*
 
-    tags = merge(local.common_tags, { Name = "${var.environment_tag}-website" })
-  }
+# Azure RM DNS #
+resource "azurerm_dns_cname_record" "elb" {
+  name                = "${var.environment_tag}-website"
+  zone_name           = var.dns_zone_name
+  resource_group_name = var.dns_resource_group
+  ttl                 = "30"
+  record              = aws_elb.web.dns_name
+  provider            = azurerm.arm-1
 
-  ##################################################################################
-  # OUTPUT
-  ##################################################################################
+  tags = merge(local.common_tags, { Name = "${var.environment_tag}-website" })
+}
 
-  output "aws_elb_public_dns" {
-    value = aws_elb.web.dns_name
-  }
-
-  output "cname_record_url" {
-    value = "http://${var.environment_tag}-website.${var.dns_zone_name}"
-  }
+*/
